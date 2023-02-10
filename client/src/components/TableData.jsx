@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const findUser = (data, value) => {
   const find = data.find(({ location }) => {
@@ -13,14 +13,14 @@ const findUser = (data, value) => {
     const longitude = location.coordinates.longitude.toString().toUpperCase();
 
     if (
-      city === value ||
-      state === value ||
-      country === value ||
-      postcode === value ||
-      number === value ||
-      name === value ||
-      latitude === value ||
-      longitude === value
+      city.search(value) > -1 ||
+      state.search(value) > -1 ||
+      country.search(value) > -1 ||
+      postcode.search(value) > -1 ||
+      number.search(value) > -1 ||
+      name.search(value) > -1 ||
+      latitude.search(value) > -1 ||
+      longitude.search(value) > -1
     ) {
       return true;
     }
@@ -34,13 +34,13 @@ const sortData = (data, name) => {
     let B;
 
     // for street name
-    if (name === "name" || name === "number") {
+    if (name === 'name' || name === 'number') {
       A = a.location.street[name].toString().toUpperCase();
       B = b.location.street[name].toString().toUpperCase();
     }
 
     // latitude
-    else if (name === "latitude" || name === "longitude") {
+    else if (name === 'latitude' || name === 'longitude') {
       A = a.location.coordinates[name];
       B = b.location.coordinates[name];
     }
@@ -62,7 +62,7 @@ const TableData = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("https://randomuser.me/api?results=30");
+      const response = await axios.get('https://randomuser.me/api?results=30');
       setData(response.data.results);
       setFilterData(response.data.results);
     } catch (err) {
@@ -77,8 +77,11 @@ const TableData = () => {
   const handleSearch = (e) => {
     const value = e.target.value.trim().toUpperCase();
 
-    if (!value) setSearching(false);
-    else setSearching("Searching...");
+    if (!value) {
+      setSearching(false);
+      setFilterData(data);
+      return;
+    } else setSearching('Searching...');
 
     clearInterval(delayDebounceFn);
     delayDebounceFn = setTimeout(() => {
@@ -88,13 +91,13 @@ const TableData = () => {
         setSearching(null);
       } else {
         setFilterData(data);
-        setSearching("No Record found.");
+        setSearching('No Record found.');
       }
     }, 3000);
   };
 
   const handleSort = (name) => {
-    if (name === "postcode") alert("Sort functionality not implemented");
+    if (name === 'postcode') alert('Sort functionality not implemented');
     const sortedData = sortData(data, name);
     setFilterData([...sortedData]);
   };
@@ -102,18 +105,18 @@ const TableData = () => {
   return (
     <div>
       <h2>Random User List</h2>
-      <input type="text" name="search" onChange={handleSearch} />
+      <input type='text' name='search' onChange={handleSearch} />
       <div>{searching}</div>
       <table>
         <tr>
-          <th onClick={() => handleSort("city")}>City</th>
-          <th onClick={() => handleSort("state")}>State</th>
-          <th onClick={() => handleSort("country")}>Country</th>
-          <th onClick={() => handleSort("postcode")}>Post Code</th>
-          <th onClick={() => handleSort("number")}>Number</th>
-          <th onClick={() => handleSort("name")}>Name</th>
-          <th onClick={() => handleSort("latitude")}>Latitude</th>
-          <th onClick={() => handleSort("longitude")}>Longitude</th>
+          <th onClick={() => handleSort('city')}>City</th>
+          <th onClick={() => handleSort('state')}>State</th>
+          <th onClick={() => handleSort('country')}>Country</th>
+          <th onClick={() => handleSort('postcode')}>Post Code</th>
+          <th onClick={() => handleSort('number')}>Number</th>
+          <th onClick={() => handleSort('name')}>Name</th>
+          <th onClick={() => handleSort('latitude')}>Latitude</th>
+          <th onClick={() => handleSort('longitude')}>Longitude</th>
           <th>Profile</th>
         </tr>
         {!data && <h2>Loading</h2>}
@@ -128,7 +131,7 @@ const TableData = () => {
             <td>{location?.coordinates?.latitude}</td>
             <td>{location?.coordinates?.longitude}</td>
             <td>
-              <img alt="profile" src={picture.medium} />
+              <img alt='profile' src={picture.medium} />
             </td>
           </tr>
         ))}
