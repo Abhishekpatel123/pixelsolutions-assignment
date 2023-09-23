@@ -30,13 +30,43 @@ let breakTime = 60; // in second
 
 let intervalId;
 let clients = {};
+
+const task = cron.schedule(
+  '*/60 * * * * *',
+  async () => {
+    try {
+      console.log('running a task every minute');
+      const data = await fetchBitPriceApi();
+
+      io.emit('data', data);
+      await BitPriceModel.deleteMany({});
+      await BitPriceModel.create(data);
+    } catch (error) {
+      console.log('cron error');
+    }
+  },
+  { scheduled: false }
+);
+
+// setInterval(async () => {
+//   try {
+//     console.log('running a task every minute');
+
+//     // io.emit('data', data);
+//     // await BitPriceModel.deleteMany({});
+//     // await BitPriceModel.create(data);
+//   } catch (error) {
+//     console.log('cron error');
+//   }
+// }, 3 * 1000);
+
 io.on('connection', (socket) => {
+  task.start();
   console.log(socket.id, 'client joined');
 
   socket.on('bit-price-page', () => {
     clients = { [socket.id]: true };
     console.log(clients, 'client counts');
-    task.start();
     store(socket, breakTime);
   });
 
@@ -61,26 +91,28 @@ const store = async (socket, breakTime) => {
     if (!bitPrice?.bidPrice) {
       console.log('bit price not in store');
       const data = await fetchBitPriceApi();
-      socket.emit('data', data);
-      await BitPriceModel.deleteMany({});
-      await BitPriceModel.create(data);
+      if (data) {
+        socket.emit('data', data);
+        await BitPriceModel.create(data);
+        await BitPriceModel.deleteMany({});
+      }
       return;
     }
 
     // - If bit price already present
-    console.log('bit price in store');
-    const nowDate = new Date(new Date().toISOString()).getTime();
-    const is = (nowDate - bitPrice.time) / 1000 > breakTime;
-    // Is expire or not
-    if (is) {
-      console.log('expired');
-      const data = await fetchBitPriceApi();
-      socket.emit('data', data);
-      await BitPriceModel.deleteMany({});
-      await BitPriceModel.create(data);
-      return;
-      // console.log(response.data, 'data');
-    }
+    // console.log('bit price in store');
+    // const nowDate = new Date(new Date().toISOString()).getTime();
+    // const is = (nowDate - bitPrice.time) / 1000 > breakTime;
+    // // Is expire or not
+    // if (is) {
+    //   console.log('expired');
+    //   const data = await fetchBitPriceApi();
+    //   socket.emit('data', data);
+    //   await BitPriceModel.deleteMany({});
+    //   await BitPriceModel.create(data);
+    //   return;
+    //   // console.log(response.data, 'data');
+    // }
     // If is not expire then we can send the previous store bit price
     console.log('not expired');
     socket.emit('data', bitPrice);
@@ -96,26 +128,12 @@ httpServer.listen(PORT, () => {
 
 process.count = 0;
 const fetchBitPriceApi = async () => {
-  console.log(process.count++, 'api call count');
+  console.log(++process.count, 'api call count');
   try {
     const response = await axios.post(URL, formData, options);
+    console.log(response.data.data, 'data');
     return response.data.data;
   } catch (err) {
     console.log(err, 'api error');
   }
 };
-
-const task = cron.schedule(
-  '*/60 * * * * *',
-  async () => {
-    console.log('running a task every minute');
-    const data = await fetchBitPriceApi();
-
-    io.emit('data', data);
-    await BitPriceModel.deleteMany({});
-    await BitPriceModel.create(data);
-
-    // store(socket, breakTime);
-  },
-  { scheduled: false }
-);
